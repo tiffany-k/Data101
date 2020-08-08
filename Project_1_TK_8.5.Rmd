@@ -1,0 +1,383 @@
+---
+title: "Project_1"
+author: "Ana OR"
+date: "8/4/2020"
+output: html_document
+---
+
+## Topic Background
+
+Each of our team members originally selected a few datasets that we compared as a group.  Our group decided to explore a dataset Ana found related to the topic of racial and ethnic diversity at two-year and four-year colleges and universities in the United States.  We intially thought to compare diversity at two-year community colleges versus 4-year schools and also were curious about the variations in diversity between the two that could be found comparatively across the country.
+
+As we were exploring the dataset we identified a number of named colleges and universities that are known as "for-profit" institutions. Some of these institutions have been the subject of recent lawsuits regarding predatory (Halperin, 2020; Legal Services Center, 2020; Redman, 2020).  The high number of current lawsuits regarding for-profit colleges' predatory behaviors are a result of the actions of current Education Secretary Betsy DeVos.  In 2019, DeVos "repealed an Obama-era regulation that sought to crack down on for-profit colleges and universities that produced graduates with no meaningful job prospects and mountains of student debt they could not hope to repay" (Green, 2019. para. 1).  Another action that DeVos took was to deny debt forgiveness to students who had been prey to for-profit predatory educational institutions (Lobosco, 2019; Turner, 2019).  We were aware of past and recent news articles describing the marketing strategies of these colleges that were aimed at students of color, low-income students, immigrant communities and students who are first in their family to go to college (Bonadies et al. 2018; Conti, 2019; Voorhees, 2019).  We thought it would be interesting to examine our dataset for consistencies or inconsistencies with these reports.
+
+## Initial Questions
+
+1. How do racial and ethnic demographics vary between not-for-profit institutions and for-profit colleges?
+
+2. Do the For-Profit Institutions have a higher proportion of students of color than other community colleges and four-year colleges, thus providing support to the argument that For-Profit colleges target students of color for enrollment?
+
+## Definitions:
+For-Profit Institution:
+
+Not-for Profit Institution:
+
+## Webscraping and Randomly Selecting Sample of 35 For-Profit Colleges
+
+Our dataset did not include information on whether colleges were for-profit.
+
+In order to determine which of the schools on our list were for-profit institutions, we decided to find a website with a list of for-profit institutions, scrape the data from that website, to create a second dataset with a list of for profit schools.  
+
+# Following Web-Scrapping turtorial to scrape Wikipedia website
+
+# Loading Libraries
+```{r}
+#Loading the rvest package
+library('rvest')
+library(tidyverse)
+library(dplyr)
+```
+
+```{r}
+#Specifying the url for desired website to be scraped
+url <- 'https://en.wikipedia.org/wiki/List_of_for-profit_universities_and_colleges'
+
+#Reading the HTML code from the website
+webpage <- read_html(url)
+
+#Using CSS selectors to scrape the rankings section
+for_profit_html <- html_nodes(webpage,'li a')
+#Converting the ranking data to text
+for_profit <- html_text(for_profit_html)
+
+#Let's have a look at the rankings
+head(for_profit)
+```
+
+# Viewing new index
+```{r}
+# for_profit
+```
+
+```{r}
+for_profit_new <- for_profit[25:215]
+head(for_profit_new)
+```
+## cleaning our for-profit list
+```{r}
+for_profit_new[167:168] <- NA
+for_profit_new
+```
+
+```{r}
+final_for_profit <- na.omit(for_profit_new)
+```
+
+```{r}
+#final_for_profit
+ df <-data_frame(final_for_profit)
+df
+```
+
+The webscraping exercise produced a list of over 1,000 schools.  We decided to take a random sample of n=35  schools on that list, which also appeared in our dataset. We selected 35 schools so that we would comply with the Central Limit Theorem.  The result of the randomization we ran on the webscraped data is below.  Each of us compared a portion of the list with our dataset to ensure that all of our selections were present on both lists.  We ran multiple randomizations until we had a consistent list with 35 schools appearing on both datasets.
+
+```{r}
+sample_n(df,35)
+```
+
+# Jennifer
+Spencerian College
+- Spencerian College at Louisville (Ky.) 
+- Spencerian College at Lexington (Ky.
+Aspen University	
+American Public University	
+- American Public University system
+Western International University	
+NewSchool of Architecture and Design	
+Schiller International University	
+National Paralegal College	
+West Coast University	
+- West Coast University at Ontario
+- West Coast University trasound Institute 
+- West Coast University at Dallas
+- West Coast University at Miami
+- West Coast University -Los Angeles
+- West Coast University -Orange County
+Mildred Elley	
+- Mildred Elley
+- Mildred Elley at New York City
+Brookline College	
+- Brookline College at Tucson
+- Brookline College at Tempe (Ariz.)
+- Brookline College at Albuquerque
+- Brookline College at Phoenix
+Grand Canyon University	
+
+#Ana
+Walden University	
+Blue Cliff College	
+Neumont University	
+University of Pheonix
+Stevens-Henager College	
+DeVry University	
+Pioneer Pacific College	
+Capella University	
+Grantham University	   
+Stratford University	
+Redstone College	
+National College	
+
+# Tiffany
+Strayer University	
+Lincoln Tech	
+Full Sail University	
+Rocky Mountain College of Art and Design	
+Minneapolis Business College	
+Fashion Institute of Design & Merchandising	
+Paier College of Art
+Vista College	
+Centura College	
+Rasmussen College
+Redstone College	
+Fortis College	
+Bay State College	
+
+
+
+## Data Wrangling & Analysis
+
+The dataset was retrieved from Kaggle, available here: https://www.kaggle.com/jessemostipak/college-tuition-diversity-and-pay?select=diversity_school.csv  
+
+The dataset is composed of five separate .csv files addressing school diversity, historical tuition rates, salary protential, the cost of tuition in 2016 and the income of students compared to tuition.  We mostly relied upon the school diversity file. 
+
+
+### Setting working directory
+```{r}
+setwd("/Users/tiffanyking/Documents/R Studio Project 1 ") 
+diversity <- read_csv("diversity2.csv")
+```
+### Viewing data
+```{r}
+head(diversity)
+```
+
+## Cleaning the Data
+
+There were numerous "tidying" exercises that we undertook to clean our data and make the webscraping dataset and the diversity dataset comparable. We also created a new column calculating the percent of students in attendance based on race and ethnicity and a new binary column identifying the selected for-profit and not-for-profit schools represented by "1" and "0" respectively.
+
+### Replacing White spaces with underscores
+```{r}
+#gsub(" ", "_", diversity$name)
+#gsub(" ", "_", diversity$category) 
+```
+
+### Creating new column for percent enrollment
+```{r}
+diversity_new <- diversity %>%  mutate(enrollment_percentage = enrollment/ total_enrollment*100)
+```
+
+```{r}
+head(diversity_new)
+```
+```{r}
+diversity_new %>% filter(name=="Strayer University")
+```
+
+
+```{r}
+unique(diversity_new$name)
+```
+
+
+```{r}
+devry <- filter(diversity_new, str_detect(name, "DeVry"))
+pheniox <- filter(diversity_new, str_detect(name,"Pheniox"))
+strayer <- filter(diversity_new, str_detect(name, "Strayer"))
+```
+
+```{r}
+str(diversity_new)
+```
+## Option to Change names for multiple locations into one name
+
+```{r}
+diversity_new$name[diversity_new$name == "Spencerian College at Louisville (Ky.)"] <- "Spencerian_College"
+```
+
+```{r}
+diversity_new$name[diversity_new$name == "Spencerian College at Lexington (Ky.)"] <- "Spencerian_College"
+```
+
+```{r}
+diversity_new$name %>% 
+  if(name %in% "Mildred Elley") {
+  name == "Mildred_Elley"
+  }  
+```
+
+
+
+### 35 Randomly selected not-for-profit educational institutions
+
+For consistency of methodology we decided to select 35 schools from the not-for-profit educational institutions to compare to the 35 randomly selected for-profit schools.  
+
+```{r}
+sample_n(diversity_new,35)
+```
+
+# Jennifer
+University of Idaho
+Southwestern Community College (Iowa)
+Clover Park Technical College
+Clark College
+City University of New York Hunter College
+University of Houston
+- University of Houston
+- University of Houston-Downtown
+- University of Houston-Clear Lake
+- University of Houston-Victoria
+University of Colorado 
+- University of Colorado at Colorado Springs
+- University of Colorado at Boulder
+- University of Colorado at Denver
+University of Massachusetts
+- University of Massachusetts at Dartmouth
+- University of Massachusetts at Worcester
+- University of Massachusetts at Amherst
+- University of Massachusetts at Lowell
+- University of Massachusetts at Boston
+Arizona College
+- Arizona College at Glendale
+- Arizona College at Mesa
+San Diego City College
+
+#Ana
+State University of New York College at Purchase
+Eastern Shore Community College
+Southern Oregon University
+Santa Monica College
+Adirondack Community College
+East Georgia State College
+Smith College
+East Tennessee State University
+Austin Community College
+Tompkins Cortland Community College
+
+#Tiffany
+University of Hawaii Hawaii Community College
+Burlington College
+Pennsylvania State University - Harrisburg
+University of Minnesota
+University of Central Oklahoma
+Southern Virginia University
+Pennsylvania Highlands Community College
+Arizona State University
+ITT Technical Institute at Knoxville
+Colgate University
+
+University of Pittsburg
+
+## Create a new column to identify the randomly selected for-profit colleges sample.
+
+```{r}
+#diversity_new2 <- diversity %>%  mutate(for_profit = 
+#if name == "Spencerian_College" )
+```
+
+
+
+
+
+
+```{r, include=FALSE}
+### Produces all False Columns
+diversity_new2 <- diversity_new %>% mutate(forProfit = str_detect(name =='Spencerian_College', "1"))
+```
+
+```{r, include=FALSE}
+diversity_new2$forProfit[47834]
+```
+```{r, include=FALSE}
+sum(diversity_new2$forProfit == FALSE)
+```
+
+
+### Produces 1 for For-Profit Random Selections and 0 for the rest
+
+```{r}
+diversity_new3 <- diversity_new %>% mutate(diversity_new,forProfit = ifelse(name=="Spencerian_College", 1,
+     ifelse(name=="Aspen University", 1, 
+        ifelse(name=="American Public University system", 1, 0))))
+```
+
+
+```{r}
+diversity_new3$forProfit[47834] # Check on Spencerian_College entry
+diversity_new3$forProfit[24533] # Check on Aspen University
+diversity_new3$forProfit[123] # Check on American Public University system
+```
+
+##**Tiffany's FOR PROFIT Schools**
+```{r}
+diversity_new$name[grepl('Strayer University',diversity_new$name)]<- 'Strayer_Univ.'
+```
+
+```{r}
+diversity_new$name[grepl('Lincoln Tech',diversity_new$name)]<- 'Lincoln_Tech' 
+```
+
+```{r}
+diversity_new$name[grepl('Fashion Institute of Design & Merchandising',diversity_new$name)]<- 'Fashion_Institute' 
+```
+
+```{r}
+diversity_new$name[grepl('Centura College' ,diversity_new$name)]<- 'Centura_College'
+```
+
+```{r}
+diversity_new$name[grepl('Rasmussen College' ,diversity_new$name)]<- 'Rasmussen_College'
+```
+
+```{r}
+diversity_new$name[grepl('Fortis College' ,diversity_new$name)]<- 'Fortis_College'
+```
+
+
+##**Tiffany's Non Profit Schools**
+
+```{r}
+diversity_new$name[grepl('Pennsylvania State University',diversity_new$name)]<- 'Penn_State_Univ.'
+```
+
+```{r}
+diversity_new$name[grepl('University of Minnesota',diversity_new$name)]<- 'Univ._of_Minn'
+```
+
+```{r}
+diversity_new$name[grepl('Arizona State University',diversity_new$name)]<- 'Arizona_State' 
+```
+
+```{r}
+diversity_new$name[grepl('ITT Technical Institute',diversity_new$name)]<- 'ITT_Tech'
+```
+
+
+## **References**
+
+Bonadies, G.G., Rovenger, J., Connor, E., Shum, B. & Merrill, T. (2018, Jul. 30). For-Profit Schools' Predatory Practices and Students of Color:  A Mission to Enroll Rather than Educate, *Harvard Law Review Blog*. https://blog.harvardlawreview.org/for-profit-schools-predatory-practices-and-students-of-color-a-mission-to-enroll-rather-than-educate/  
+
+Conti, A. (2019, Sep. 10).  How For-Profit Colleges Have Targeted and Taken Advantage of Black Students. *Vice*. https://www.vice.com/en_us/article/bjwj3d/how-for-profit-colleges-have-targeted-and-taken-advantage-of-black-students
+
+Green, E.L. (2019, Jun. 28).  DeVos Repeals Obama-Era Rule Cracking down on For-Profit Colleges, *New York Times*. https://www.nytimes.com/2019/06/28/us/politics/betsy-devos-for-profit-colleges.html
+
+Halperin, D. 22 States Sue DeVos to Overturn Anti-Student Rule.  *Republic Report*. https://www.republicreport.org/2020/22-states-sue-devos-to-overturn-anti-student-rule/
+
+Legal Services Center(2020), *Project on Predatory Student Lending: Cases*, Harvard Law School.  https://predatorystudentlending.org/cases/
+
+Lobosco, K. (2019, Jul. 23).  For-profit college students are waiting 958 days for loan relief, *CNN*.  https://www.cnn.com/2019/07/23/politics/betsy-devos-loan-forgiveness-for-profit-college-students/index.html
+
+Redman, H. (2020, Jun. 27).  AG Sues Department of Education Over For-Profit College Rules.  *Urban Milwaukee*.  https://urbanmilwaukee.com/2020/06/27/ag-sues-department-of-education-over-for-profit-college-rules/
+
+Turner, C. (2019, Nov. 14).  Devos Refuses to Forgive student Debt For Those DeFrauded by For-Profit Colleges, *All Things Considered, NPR*. https://www.npr.org/2019/11/14/779465130/devos-refuses-to-forgive-student-debt-for-those-defrauded-by-for-profit-colleges
+
+Voorhees, K. (2019, Oct. 17).  Civil Rights Groups: For-Profit Colleges Exploit Black and Latino Students. *The Leadership Conference Education Fund*. https://civilrights.org/edfund/2019/10/17/civil-rights-groups-for-profit-colleges-exploit-black-and-latino-students/
