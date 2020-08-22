@@ -1,0 +1,1535 @@
+---
+title: "Final Project Clean"
+author: "Jennifer Johnson, Tiffany King, Ana Ortez-Rivera"
+date: "8/16/2020"
+output: html_document
+---
+```{r}
+library(git2r)
+library(usethis)
+```
+
+# **Racial Demographics at For-Profit and Not-For-Profit Educational Institutions**
+
+### *"Until we get equality in education, we won't have an equal society."* 
+#### ~ Supreme Court Justice Sonia Sotomayor
+
+## **Topic Background**
+
+Each of our team members originally selected a few datasets that we compared as a group.  Our group decided to explore a dataset Ana found related to the topic of racial and ethnic diversity at two-year and four-year colleges and universities in the United States.  We initially thought to compare diversity at two-year community colleges versus 4-year schools and also were curious about the variations in diversity between the two that could be found comparatively across the country.
+
+As we were exploring the dataset we identified a number of named colleges and universities that are known as "for-profit" institutions. Some of these institutions have been the subject of recent lawsuits regarding predatory (Halperin, 2020; Legal Services Center, 2020; Redman, 2020).  The high number of current lawsuits regarding for-profit colleges' predatory behaviors are a result of the actions of current Education Secretary Betsy DeVos.  In 2019, DeVos "repealed an Obama-era regulation that sought to crack down on for-profit colleges and universities that produced graduates with no meaningful job prospects and mountains of student debt they could not hope to repay" (Green, 2019. para. 1).  Another action that DeVos took was to deny debt forgiveness to students who had been prey to for-profit predatory educational institutions (Lobosco, 2019; Turner, 2019).  We were aware of past and recent news articles describing the marketing strategies of these colleges that were aimed at students of color, low-income students, immigrant communities and students who are first in their family to go to college (Bonadies et al. 2018; Conti, 2019; Voorhees, 2019).  Previous studies have found that loan debt is higher for students who have attended For-Profit institutions, which disproportionately affects students of color.
+
+
+```{r pressure2, echo=FALSE, fig.cap="**Race and For-Profits**", out.width= '75%'}
+knitr::include_graphics("chart_2.PNG")
+```
+(Body, 2019)
+
+
+```{r pressure3, echo=FALSE, fig.cap="**Loan Default Rates at For-Profits**", out.width= '75%'}
+knitr::include_graphics("chart_1.PNG")
+```
+(Body, 2019)
+
+Despite their high cost, For-profit institutions have a lower graduation rate and employment rate than non-profit institutions.
+
+```{r pressure4, echo=FALSE, fig.cap="**For-Profit Graduation & Employment Rates**", out.width= '50%'}
+knitr::include_graphics("chart_3.jpg")
+```
+(Lopez, 2015)
+
+We have examined our dataset and explored possible consistencies and/or inconsistencies with these previous reports.
+
+## **Initial Questions**
+
+1. How do racial and ethnic demographics vary between private and public institutions in our dataset?
+
+2. How do racial and ethnic demographics vary between not-for-profit institutions and for-profit colleges in our dataset?
+
+3. What is the relationship between tuition rate and salary potential?
+
+4. Will for profit cost of attendance/tuition be higher than not for profit schools?
+
+5. What are the trends in the cost of college education?
+
+6.. How do tuition rates and salary rates at the top schools compare to other schools?
+
+7. Ana Q
+
+
+## **Definitions**:
+
+
+**For-Profit Institutions**:  For-profit institutions are defined by the way that "revenue earned by the school is invested".  For-profit colleges have investors who want to make a profit. Their operations management is determined in part on maximizing the return profit for investors.  "Money earned by the shcool may be used to pay out investors and award boneuses to executives, as well as sustain the operation's profitability through aggressive marketing and recruitment strategies" (TBS Staff, 2019, para. 8)  
+
+**Not-for Profit Institutions**:  Non-profit colleges can be either public or private. Regardless of whether the school is public or private, non-profit colleges must "reinvest the money earned through enrollment into the educational mission" (TBS Staff, 2019, para. 8).  
+
+## **Webscraping and Randomly Selecting Sample of 35 For-Profit Colleges**
+
+Our dataset did not include information on whether colleges were for-profit.
+
+In order to determine which of the schools on our list were for-profit institutions, we decided to find a website with a list of for-profit institutions, scrape the data from that website, to create a second dataset with a list of for profit schools.  
+
+### Following Web-Scraping Tutorial to Scrape Wikipedia Website
+
+### Loading Libraries
+```{r}
+#Loading the rvest package
+library('rvest')
+library(tidyverse)
+library(dplyr)
+```
+
+## **Creating a data set with all of our variables**
+```{r}
+diversity <- read_csv("diversity2.csv")
+salary <- read_csv("salary_potential.csv")
+salary_added <- left_join(diversity,salary,by="name")
+salary_added_final <- na.omit(salary_added)
+```
+
+```{r}
+tuition <- read_csv("tuition_cost.csv")
+tuition_added <- left_join(tuition,salary_added_final,by="name")
+tuition_added_final <- na.omit(tuition_added)
+```
+
+```{r}
+monsterfinal <- tuition_added_final 
+```
+
+### Cleaning the Data
+```{r}
+monsterfinal <- monsterfinal %>% filter(category != "Women" & category != "Two Or More Races" & category != "Non-Resident Foreign" & category != "Unknown" & category != "Total Minority") 
+```
+
+```{r}
+monsterfinal <- monsterfinal %>%  mutate(enrollment_percentage = enrollment/ total_enrollment*100)
+```
+
+```{r}
+monsterfinal %>% 
+  mutate_if(is.numeric, round, digits = 2)
+```
+
+## **Question 1: How do racial and ethnic demographics vary between private and public institutions in our dataset?**
+
+### Plot of Enrollment Percentages based on Race & Ethnicity: Combined For-profit and Non-profit Data, Without Census Data
+
+```{r}
+summary(monsterfinal)
+```
+
+
+```{r}
+
+ggplot(data=monsterfinal, aes(x=category, y=enrollment_percentage, fill=type)) +
+geom_bar(stat="identity", position=position_dodge()) +
+  ggtitle("Public & Private Racial & Ethnic Percent Enrollment Comparisons") +
+  labs(y = "Enrollment Percentage", x = "Race/Ethnicity")+
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  theme_minimal()+
+   scale_fill_manual(values=c("#9999CC", "#66CC99"))
+  
+
+```
+This plot suggests that there are higher proportions of Black and Native Hawaiian/Pacific Islanders at private schools than public schools
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(plotly)
+monsterfinal %>%
+  mutate_if(is.numeric, round, digits = 2)  %>%
+  ggplot(aes(x=category, y=enrollment_percentage, fill=type, text = paste("Percent:", enrollment_percentage, '</br>', '</br>School Name:', name))) +
+geom_bar(stat="identity", position=position_dodge()) +
+  ggtitle("For-Profit/Non-Profit Racial & Ethnic Comparisons") +
+  labs(y = "Enrollment Percentage", x = "Race/Ethnicity")+
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  theme_minimal()
+
+ggplotly(tooltip = "text") 
+```
+
+# Monsterfinal does not have 2 year programs - Plot with Tuition_added dataset - suggest we exclude
+```{r}
+tuition_added %>% 
+  filter(category != "Women" | category != "Unknown" | category != "Two or More Races" | category != "Total Minority" | category != "Non-Resident") %>%
+  
+  
+ggplot(data=tuition_added, aes(x=category, y=enrollment, fill=degree_length)) +
+geom_bar(stat="identity", position=position_dodge()) +
+  ggtitle("2 Year/4 Year Racial & Ethnic Percent Enrollment Comparisons") +
+  labs(y = "Enrollment Percentage", x = "Race/Ethnicity")+
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  theme_minimal()+
+   scale_fill_manual(values=c("#CC6666", "#9999CC", "#66CC99"))
+  
+
+```
+
+```{r}
+library(dplyr)
+sum(tuition_added$type == "Public")
+sum(tuition_added$type == "Private")
+sum(tuition_added$type == "For Profit")
+```
+
+```{r}
+library(RColorBrewer)
+
+ggplot(monsterfinal, aes(reorder(type, enrollment_percentage), enrollment_percentage, fill = type)) +
+  geom_bar(stat = 'identity') +
+  facet_wrap(~ category)+
+  theme_bw()+
+  scale_fill_brewer()
+```
+## **Question 2: How do racial and ethnic demographics vary between not-for-profit institutions and for-profit colleges in our dataset?**
+
+### **Comparing For-Profit and Non-Profit Data with Census Data**
+
+### Creating a Dataset with US Census information
+According to the US census population statistics website the following is the breakdown of the racial demographics in the United States.
+
+- White: 72%
+- Black or African American alone - 12.7%
+- American Indian and Alaska Native alone - 0.9%
+- Asian alone - 5.6%
+- Native Hawaiian and Other Pacific Islander alone - 0.2%
+- Hispanic - 18%
+- Some other race alone - 5.0%
+- Two or more races - 3.4%
+
+```{r}
+census <- data.frame("category" = c("White", "Black", "American Indian/Alaska Native", "Asian", "Native Hawaiian / Pacific Islander", "Hispanic"), "Percent_Pop" = c(.72, .127, .09, .056, .002, .18))
+
+census
+```
+
+```{r}
+pcensus <- ggplot(census, aes(reorder(x = category, Percent_Pop), y = Percent_Pop, fill = category))+
+  geom_bar(stat = "identity")+ 
+  geom_text(aes(label = scales::percent(Percent_Pop), 
+                  y = Percent_Pop, 
+                  group = category, vjust = -.2))+
+  ggtitle("Percentage of U.S. Population by Race/Ethnicity") +
+  labs(y = "Percent of Population", x = "Race/Ethnicity")+
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  theme_minimal()+
+   scale_fill_brewer()
+
+pcensus 
+```
+
+
+## **Creating Sample Datasets of For-Profit and Non-Profit Institutions to Merge with the Census Information**
+
+### Viewing data
+```{r}
+head(diversity)
+diversity <- read_csv("diversity2.csv")
+```
+
+### Cleaning the Data
+
+There were numerous "tidying" exercises that we undertook to clean our data and make the webscraping dataset and the diversity dataset comparable.  Our tidying exercises included, but were not limited to, creating the following: 
+1. a new column calculating the percent of students in attendance based on race and ethnicity 
+2. a new binary column identifying the selected for-profit and not-for-profit schools represented by "1" and "0" respectively.  
+3. two new datasets: one for our randomly selected for-profit schools and one for our randomly selected not-for-profit schools. 
+
+### Creating new column for percent enrollment
+```{r}
+diversity_new <- diversity %>%  mutate(enrollment_percentage = enrollment/ total_enrollment*100)
+```
+
+```{r}
+head(diversity_new)
+```
+
+### Removing Categories: Women, Non-Resident Foreign and Two or More Races
+
+We removed these categories to eliminate categories where there could be duplicitous counts.
+
+
+```{r}
+diversity_new5 <- diversity_new %>% filter(category != "Women" & category != "Two Or More Races" & category != "Non-Resident Foreign" & category != "Unknown" & category != "Total Minority") 
+```
+
+This function was used to assess how many separate schools were included in the dataset.  There were over 4000 schools listed.
+
+```{r}
+# unique(diversity_new5$name)
+```
+
+These functions were used to attempt to find individual schools.  It was successful.
+
+```{r, include = FALSE}
+# devry <- filter(diversity_new5, str_detect(name, "DeVry"))
+# pheonix <- filter(diversity_new5, str_detect(name,"Pheonix"))
+# strayer <- filter(diversity_new5, str_detect(name, "Strayer"))
+```
+
+We checked the structure of our new dataset.
+
+```{r}
+str(diversity_new5)
+```
+
+### Changing Names of Schools with Multiple Locations into One Name (separate rows remain)
+
+This initial approach went one-by-one.  For schools with multiple locations, some with 20 or more, we needed a faster and more efficient option.
+```{r}
+diversity_new5$name[diversity_new5$name == "Spencerian College at Louisville (Ky.)"] <- "Spencerian College"
+diversity_new5$name[diversity_new5$name == "Spencerian College at Lexington (Ky.)"] <- "Spencerian College"
+diversity_new5$name[diversity_new5$name == "NewSchool of Architecture and Design"] <- "NewSchool Arch. Design"
+diversity_new5$name[diversity_new5$name == "Western International University"] <- "Western Intl Univ."
+diversity_new5$name[diversity_new5$name == "Schiller International University"] <- "Schiller Intl Univ."
+diversity_new5$name[diversity_new5$name == "National Paralegal College"] <- "Natl Paralegal College"
+diversity_new5$name[diversity_new5$name == "WestCoast University"] <- "West Coast Univ."
+```
+
+```{r}
+#Failed Attempt
+# ME <- diversity_new %>% 
+# select(contains('Mildred Elley'))
+# ME
+```
+
+### Name change for the entire group containing a portion of the name
+
+We discovered the "grepl" function which allowed us to change entire groups of rows that contained a similar word or set of words.  All of the different locations could be changed in one set of code instead of multiple sets.
+```{r}
+diversity_new5$name[grepl('Mildred Elley', diversity_new5$name)] <- 'Mildred Elley'
+```
+
+
+### Showing the Multiple Location Indicies to Verify Name Change Success After
+
+This code identified all of the entries that included "West Coast University" in the name.
+```{r}
+which(grepl("West Coast University", diversity_new5$name))
+```
+
+These indices were used to show the current names in the dataset.
+```{r}
+diversity_new5$name[14911]
+diversity_new5$name[15707]
+diversity_new5$name[17813]
+diversity_new5$name[19541]
+diversity_new5$name[23466]
+diversity_new5$name[31675]
+```
+
+### Single Line of Code to Change All Location Names to One Name
+```{r}
+diversity_new5$name[grepl('West Coast University', diversity_new5$name)] <- 'West Coast Univ.'
+```
+
+### Verifying that the group name change worked for each group
+
+We used the same indices to ensure that the names of all groups changed to the single name.
+```{r}
+diversity_new5$name[14911]
+diversity_new5$name[15707]
+diversity_new5$name[17813]
+diversity_new5$name[19541]
+diversity_new5$name[23466]
+diversity_new5$name[31675]
+```
+
+### One More Name Change Test
+```{r}
+which(grepl("Brookline College", diversity_new5$name))
+```
+
+```{r}
+diversity_new5$name[15746]
+diversity_new5$name[24791]
+```
+
+```{r}
+diversity_new5$name[grepl("Brookline College", diversity_new5$name)] <- "Brookline College"
+```
+
+```{r}
+diversity_new5$name[15746]
+diversity_new5$name[24791]
+```
+
+### Simplifying Names for all Schools in our Samples
+
+We changed all of the names of our schools to simplified versions which was particularly important for the schools with multiple locations.
+
+### Jennifer - For-Profit Name Changes
+```{r}
+diversity_new5$name[grepl('Clover Park Technical College', diversity_new5$name)] <- 'Clover Park Tech College'
+diversity_new5$name[grepl('San Diego City College', diversity_new5$name)] <- 'San Diego City College'
+diversity_new5$name[grepl('Aspen University', diversity_new5$name)] <- 'Aspen Univ.'
+diversity_new5$name[grepl('Grand Canyon University', diversity_new5$name)] <- 'Grand Canyon Univ.'
+diversity_new5$name[grepl('American Public University', diversity_new5$name)] <- 'American Public Univ.'
+```
+### Ana - For-Profit Name Changes
+```{r}
+diversity_new5$name[grepl('Blue Cliff College', diversity_new5$name)] <- 'Blue Cliff College' 
+diversity_new5$name[grepl('University of Phoenix', diversity_new5$name)] <- 'University of Phoenix' 
+diversity_new5$name[grepl('Stevens-Henager College', diversity_new5$name)] <- 'Stevens-Henager College' 
+diversity_new5$name[grepl('DeVry University', diversity_new5$name)] <- 'DeVry Univ.' 
+diversity_new5$name[grepl('Pioneer Pacific College', diversity_new5$name)] <- 'Pioneer Pacific College' 
+diversity_new5$name[grepl('National College at', diversity_new5$name)] <- 'National College'
+```
+### Tiffany - For-Profit Name Changes
+```{r}
+diversity_new5$name[grepl('Strayer University',diversity_new5$name)]<- 'Strayer Univ.'
+diversity_new5$name[grepl('Lincoln Tech',diversity_new5$name)]<- 'Lincoln Tech' 
+diversity_new5$name[grepl('Fashion Institute of Design and Merchandising', diversity_new5$name)]<- 'Fashion Institute'
+diversity_new5$name[grepl('Centura College',diversity_new5$name)]<- 'Centura College'
+diversity_new5$name[grepl('Rasmussen College',diversity_new5$name)]<- 'Rasmussen College' 
+diversity_new5$name[grepl('Fortis College',diversity_new5$name)]<- 'Fortis College'
+```
+
+
+### One Name that Refused to Change
+
+For some reason Southeastern Community College (Iowa) would not change names.  It also would not appear if we searched it using the which function.  We were only able to filter this school by the total_enrollment column.  Perhaps the difficulties with the name are a result of the parentheses.  Eventually we found the gsub() function to remove the parentheses from the name.
+```{r}
+library(stringr)
+str_replace(diversity_new5$name, "\\(.*\\)", "")
+```
+
+```{r}
+#diversity_new5$name <- as.character(diversity_new5$name)
+#unlist(strsplit(diversity_new5$name, " \\(.*\\)"))
+```
+
+```{r}
+#library(plyr)
+#diversity_new5$name <- as.character(diversity_new5$name)
+#c<-strsplit(diversity_new5$name, "\\(")
+#ldply(c)
+```
+
+```{r}
+# str_replace_all(diversity_new5$name, "[^[:alnum:]]", " ")
+```
+
+```{r}
+# str_replace_all(diversity_new5$name, "[[:punct:]]", " ")
+```
+
+```{r}
+diversity_new5$name <- gsub("Southeastern Community College (Iowa)", "Southeastern Community College Iowa", diversity_new5$name, fixed=TRUE)
+```
+
+```{r}
+which(grepl("Southeastern Community College Iowa", diversity_new5$name))
+which(grepl("Southeastern Community College (Iowa)", diversity_new5$name))
+```
+
+```{r}
+diversity_new5$name[grepl("Southeastern Community College (Iowa)", diversity_new5$name)] <- "Southeastern Community College Iowa"
+```
+
+```{r}
+which(grepl("2987", diversity_new5$total_enrollment))
+```
+
+```{r}
+diversity_new5$name[9217:9222]
+```
+
+
+### Merging and Summarizing the Data for Schools with Multiple Locations
+
+All of the schools with multiple locations have a single name now, however, they still are separated by rows.  We would like to combine all of the statistic for each "category" for all of the locations into one summarized row.  For example in the following image you can see four locations for the University of Houston.  
+```{r pressure1, echo=FALSE, fig.cap="**University of Houston Example**", out.width= '75%'}
+#knitr::include_graphics("Univ_of_Houston.png")
+
+```
+
+We were able to combine each of the four into one set of 7 lines with the averages calculated for each category's enrollment and enrollment percentage.  
+
+The resolution appears in the creation of dataset "c3a" below.
+
+
+### 35 Randomly selected not-for-profit educational institutions
+
+For consistency of methodology we decided to select 35 schools from the not-for-profit educational institutions to compare to the 35 randomly selected for-profit schools.  The final list of randomly selected not-for-profit schools was also geographically diverse.
+
+```{r}
+sample_n(diversity_new,35)
+```
+
+### Jennifer
+- University of Idaho
+- Southeastern Community College (Iowa)
+- Clover Park Technical College
+- Clark College
+- City University of New York Hunter College
+- University of Houston
+  + University of Houston
+  + University of Houston-Downtown
+  + University of Houston-Clear Lake
+  + University of Houston-Victoria
+- University of Colorado 
+  + University of Colorado at Colorado Springs
+  + University of Colorado at Boulder
+  + University of Colorado at Denver
+- University of Massachusetts
+  + University of Massachusetts at Dartmouth
+  + University of Massachusetts at Worcester
+  + University of Massachusetts at Amherst
+  + University of Massachusetts at Lowell
+  + University of Massachusetts at Boston
+- Arizona College
+  + Arizona College at Glendale
+  + Arizona College at Mesa
+- San Diego City College
+
+### Ana
+- State University of New York College at Purchase
+- Eastern Shore Community College
+- Southern Oregon University
+- Santa Monica College
+- Adirondack Community College
+- East Georgia State College
+- Smith College
+- East Tennessee State University
+- Austin Community College
+- Tompkins Cortland Community College
+
+### Tiffany
+- University of Hawaii Hawaii Community College
+- Burlington College
+- Pennsylvania State University - Harrisburg
+- University of Minnesota
+- University of Central Oklahoma
+- Southern Virginia University
+- Pennsylvania Highlands Community College
+- Arizona State University
+- ITT Technical Institute at Knoxville
+- Colgate University
+- University of Pittsburg
+
+### Jennifer- Non-Profit Name Changes
+```{r}
+diversity_new5$name[grepl('University of Houston', diversity_new5$name)] <- 'Univ. of Houston'
+diversity_new5$name[grepl('University of Colorado', diversity_new5$name)] <- 'Univ. of Colorado'
+diversity_new5$name[grepl('University of Massachusetts', diversity_new5$name)] <- 'Univ. of Massachusetts'
+diversity_new5$name[grepl('Arizona College', diversity_new5$name)] <- 'Arizona College'
+diverstiy_new5$name[grepl('University of Idaho', diversity_new5$name)] <- 'Univ. of Idaho'
+diversity_new5$name[grepl('Clark College', diversity_new5$name)] <- 'Clark College'
+diversity_new5$name[grepl('City University of New York Hunter College', diversity_new5$name)] <- 'City Univ. New York Hunter College'
+```
+### Ana - Non-Profit Name Changes
+```{r}
+diversity_new5$name[grepl('State University of New York', diversity_new5$name)] <- 'State Univ. of New York' 
+```
+### Tiffany - Non-Profit Name Changes
+```{r}
+diversity_new5$name[grepl('Pennsylvania State University',diversity_new5$name)]<- 'Penn State Univ.'
+diversity_new5$name[grepl('University of Minnesota',diversity_new5$name)]<- 'Univ. of Minn'
+diversity_new5$name[grepl('Arizona State University',diversity_new5$name)]<- 'Arizona State'
+diversity_new5$name[grepl('ITT Technical Institute',diversity_new5$name)]<- 'ITT Tech' 
+```
+
+
+### Create a new column to identify the randomly selected for-profit colleges sample.
+
+We were initially going to use the column to create our plots and complete out analysis, however we realized it would be faster to create separate datasets with the randomly selected schools.  The below coding successfully create a new column with "1" for the identified for-profit colleges and "0" for the rest.
+
+```{r, include=FALSE}
+#diversity_new2 <- diversity %>%  mutate(for_profit = 
+#if name == "Spencerian_College" )
+```
+
+
+```{r, include=FALSE}
+### Produces all False Columns
+diversity_new2 <- diversity_new %>% mutate(forProfit = str_detect(name =='Spencerian_College', "1"))
+```
+
+```{r, include=FALSE}
+diversity_new2$forProfit[47834]
+```
+
+```{r, include=FALSE}
+sum(diversity_new2$forProfit == FALSE)
+```
+
+
+### Produces 1 for For-Profit Random Selections and 0 for the rest
+```{r}
+diversity_new3 <- diversity_new %>% mutate(diversity_new,forProfit = ifelse(name=="Spencerian_College", 1,
+     ifelse(name=="Aspen University", 1, 
+        ifelse(name=="American Public University system", 1, 0))))
+```
+
+```{r}
+diversity_new3$forProfit[47834] # Check on Spencerian_College entry
+diversity_new3$forProfit[24533] # Check on Aspen University
+diversity_new3$forProfit[123] # Check on American Public University system
+```
+## **Creating a shorter Combined Dataset**
+
+Since the final combined dataset had nearly 4000 rows we decided to make a new dataset with simplified data. We combined all of the school entries with multiple locations into one entry with the rows populated by the averages for each variable
+
+## **Creating a two new datasets to compare of for-profit and not-for-profit institutions**
+```{r}
+for_profit2 <- diversity_new5 %>% 
+  filter(name == "Spencerian College" |
+           name == "Mildred Elley" | 
+           name == "Brookline College" | 
+           name == "Grand Canyon Univ." | 
+           name == "Aspen Univ." | 
+           name == "American Public Univ." | 
+           name == "Western Intl Univ." | 
+           name == "NewSchool Arch. Design" | 
+           name == "Schiller Intl Univ." | 
+           name == "Natl Paralegal College" | 
+           name == "West Coast Univ." | 
+           name == "Blue Cliff College" | 
+           name == "Walden University" |
+           name == "Neumont University" |
+           name == "University of Phoenix" | 
+           name == "Stevens-Henager College" | 
+           name == "DeVry Univ." | 
+           name == "Pioneer Pacific College" | 
+           name == "Stratford University" | 
+           name == "Capella University" | 
+           name == "Grantham University" | 
+           name == "Redstone College" | 
+           name == "National College" | 
+           name == "Strayer Univ." | 
+           name == "Lincoln Tech" | 
+           name == "Fashion Institute" | 
+           name == "Centura College" |  
+           name == "Rasmussen College" | 
+           name == "Fortis College" | 
+           name == "Full Sail University" | 
+           name == "Rocky Mountain College of Art & Design" | 
+           name == "Minneapolis Business College" | 
+           name == "Paier College of Art" | 
+           name == "Vista College" | 
+           name == "Bay State College" )
+```
+
+```{r}
+str(for_profit2)
+```
+
+```{r}
+head(for_profit2)
+```
+
+```{r}
+not_profit <- diversity_new5 %>% 
+  filter(name == "Univ. of Idaho" |
+           name == "Southeastern Community College Iowa"|
+           name == "Clover Park Technical College"|
+           name == "Clark College"|
+           name == "City Univ. New York Hunter College"|
+           name == "Univ. of Houston" | 
+           name == "Univ. of Colorado"|
+           name == "Univ. of Massachusetts" |
+           name == "Arizona College" |
+           name == "San Diego City College" | 
+           name == "State Univ. of New York" | 
+           name == "Eastern Shore Community College" | 
+           name == "Southern Oregon University" | 
+           name == "Santa Monica College" | 
+           name == "Adirondack Community College" | 
+           name == "East Georgia State College" | 
+           name == "Smith College" | 
+           name == "East Tennessee State University" | 
+           name == "Austin Community College" | 
+           name == "Tompkins Cortland Community College" | 
+           name == "Penn State Univ." | 
+           name == "Univ. of Minn" | 
+           name == "Arizona State" | 
+           name == "ITT Tech" | 
+           name == "University of Hawaii Hawaii Community College"|
+           name == "Burlington College" | 
+           name == "University of Central Oklahoma" | 
+           name == "Southern Virginia University" | 
+           name == "Pennsylvania Highlands Community College" | 
+           name == "Colgate University"|
+           name == "University of Pittsburg")
+```
+
+For some reason the name filter for "Southeastern Community College (Iowa)" would not select properly.  The same happened for the attempted name change above.
+
+## **New columns of for-profit and non-profit prior to joining the datasets
+
+### Adding for-profit column
+```{r}
+for_profit3 <- cbind(for_profit2, profit_status = "for-profit") 
+```
+
+### Adding non-profit column
+```{r}
+not_profit2 <- cbind(not_profit, profit_status = "non-profit")
+```
+
+### Shortening the Enrollment percentage decimal points
+
+## **Combine Random Sample For-Profit and Non-Profit Data Sets**
+```{r}
+combo_set <- rbind(for_profit3, not_profit2)
+```
+```{r}
+combo_set2 <- combo_set %>% 
+  mutate_if(is.numeric, round, digits = 2)
+```
+
+```{r}
+# Removing the "state" category so we can make a new dataset with means for each column without an error due to categorical differences that cannot be merged with a mean calculation.
+c3 <- combo_set2[,-3]
+
+```
+
+```{r}
+#creating a new dataset with all locations in one entry for each school.
+c4 <- c3 %>%
+    group_by(name, category, profit_status) %>% 
+    summarise_each(funs(mean))
+
+```
+
+This list was based off of unmerged school locations so we merged all locations into one prior to the final dataset merge.  
+```{r}
+# For-profit short combined list
+c3a <- c3 %>% 
+  filter(profit_status == "for-profit") %>% 
+  group_by(name, category, profit_status) %>% 
+    summarise_each(funs(mean))
+#str(c3a)
+```
+
+```{r}
+# not-profit short combined list
+c3b <- c3 %>% 
+  filter(profit_status == "non-profit") %>% 
+  group_by(name, category, profit_status) %>% 
+    summarise_each(funs(mean))
+#str(c3b)
+```
+
+### Creating a category of census to bind with for profit and not-for-profit groups
+```{r}
+# creating census short combined list
+c3c <- c3b
+c3c$profit_status[c3c$profit_status == "non-profit"] <- "census"
+#str(c3c)
+```
+
+
+### Changing the percentages in the census list to 
+```{r}
+# census percentages
+
+c3c$enrollment_percentage[c3c$category == 'White'] <- as.numeric(72)
+
+c3c$enrollment_percentage[c3c$category == 'Black'] <- as.numeric(12.7)
+
+c3c$enrollment_percentage[c3c$category == 'American Indian / Alaska Native'] <- as.numeric(0.9)
+
+c3c$enrollment_percentage[c3c$category == 'Asian'] <- as.numeric(5.6)
+
+c3c$enrollment_percentage[c3c$category == 'Native Hawaiian / Pacific Islander'] <- as.numeric(0.2)
+
+c3c$enrollment_percentage[c3c$category == 'Hispanic'] <- as.numeric(18)
+
+# population totals
+
+#census4bind$enrollment[census4bind$category == 'White'] <- '235560556'
+
+#census4bind$enrollment[census4bind$category == 'Black'] <- '41550265'
+
+#census4bind$enrollment[census4bind$category == 'American Indian / Alaska Native'] <- '2944507'
+
+#census4bind$enrollment[census4bind$category == 'Asian'] <- '18321377'
+
+#census4bind$enrollment[census4bind$category == 'Native Hawaiian / Pacific Islander'] <- '654334.9'
+
+#census4bind$enrollment[census4bind$category == 'Hispanic'] <- '58890139'
+
+c3c$enrollment_percentage <- as.numeric(as.character(c3c$enrollment_percentage))
+
+#str(c3c)
+
+```
+
+
+### Merge of shortened datasets
+```{r}
+c3bind <-rbind(c3c, c3b, c3a )
+#str(c3bind)
+```
+
+## **Data Visualizations with US Census Data**
+```{r}
+plot1 <- for_profit2 %>%
+  ggplot() +
+  geom_bar(aes(x=name, y= enrollment_percentage , 
+              fill = category),
+              position = "fill", 
+              stat = "identity" ) +
+  coord_flip() +
+  theme_minimal() +
+  ggtitle("Diversity % of Enrollment in For Profit US Schools", ) +
+  theme (plot.title = element_text(hjust = .01, size=15)) +
+  labs(fill = "Race") +
+  theme(legend.justification = -20, 
+        legend.position="bottom", 
+        legend.text = element_text(size=6) ,
+        )  +
+  xlab("School Name") +
+  ylab ("Percent of Enrollment") 
+plot1
+```
+
+### Racial & Ethnic Composition at Non-Profit Schools
+```{r}
+plot2 <- not_profit %>%
+  ggplot() +
+  geom_bar(aes(x=name, y= enrollment_percentage , 
+              fill = category),
+              position = "fill", 
+              stat = "identity" ) +
+  coord_flip() +
+  theme_minimal() +
+  ggtitle("Diversity % of Enrollment in Not for Profit US Schools", ) +
+  theme (plot.title = element_text(hjust = .01, size=12)) +
+  labs(fill = "Race") +
+  theme( legend.position="bottom", 
+         legend.justification = "left",
+        legend.text = element_text(size=6) ,
+        )  +
+  xlab("School Name") +
+  ylab ("Percent of Enrollment") 
+plot2
+```
+
+### **Visualization of Percent Enrollment with Census, For-Profit and Non-Profit data**
+```{r}
+ggplot(data=c3bind, aes(x=category, y=enrollment_percentage, fill=profit_status)) +
+geom_bar(stat="identity", position=position_dodge()) +
+  ggtitle("For-Profit/Non-Profit Racial & Ethnic Percent Enrollment Comparisons") +
+  labs(y = "Enrollment Percentage", x = "Race/Ethnicity")+
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  theme_minimal()+
+   scale_fill_manual(values=c("#CC6666","#9999CC", "#66CC99"))
+  
+
+```
+
+```{r}
+c3bind <- c3bind %>% 
+  mutate(enrollment_percentage = enrollment_percentage/100) %>% 
+  mutate_if(is.numeric, round, digits = 2)
+```
+
+```{r}
+library(scales)
+ggplot(c3bind, aes(reorder(profit_status, enrollment_percentage), enrollment_percentage, fill = profit_status)) +
+  geom_bar(stat = 'identity') +
+  labs(x = "Isolated Race/Ethnic Categories", y = "Enrollment Percentage", fill = "Profit Status")+
+  #scale_y_continuous(labels = function(x) paste0((x*5), "%")) + # Multiply by 5 & add %  
+  facet_wrap(~ category)+
+  theme_bw()+
+  scale_fill_brewer()
+
+```
+
+## ** Comparisons of People of Color and White People at For-Profit and Non-Profit Institutions
+
+With these individual breakdowns we thought it would be interesting to see what the overall breakdown would be between aggregated people of color as a category and white people as a category, particularly because of the vastly higher number of white people in the U.S. population compared with each individual group of people of color.
+```{r}
+
+# creating a set with only categories for people of color 
+c5a <- c4 %>% 
+  filter(category != "White")
+
+# removing individual categories
+c5b <- c5a[,-2]
+
+```
+
+```{r}
+# creating a new dataset with percentages summed for overall people of color
+c5c <- c5b %>%
+    group_by(name, profit_status) %>% 
+    summarise_each(funs(mean))
+
+# adding a column to distinguish POC
+c5c <- cbind(c5c, category = "People of Color")
+
+c5cmean <- mean(c5c$enrollment_percentage)
+c5cmean
+```
+
+```{r}
+# creating a set of all white category
+c5d <- c4 %>% 
+  filter(category == "White")
+
+c5dmean <- mean(c5d$enrollment_percentage)
+c5dmean
+```
+
+```{r}
+# joining the overall people of color dataset with the white people dataset for comparison
+c6 <- rbind(c5c, c5d)
+```
+
+```{r}
+# white census category
+c3c_white <- c3c %>% 
+  filter(category == "White")
+
+mean(c3c_white$enrollment_percentage)
+```
+
+```{r}
+# people of color census category
+c3c_poc <- c3c %>% 
+  filter(category != "White")
+
+# adding a column to distinguish POC
+c3c_poc <- c3c_poc[,-2]
+
+mean(c3c_poc$enrollment_percentage)
+  
+```
+
+```{r}
+c3c_poc <- cbind(c3c_poc, category = "People of Color")
+```
+
+
+### Binding Census data with Dataset for People of Color and White People
+```{r}
+c6census <- rbind(c6, c3c_white, c3c_poc)
+
+```
+
+```{r}
+p1 <- c6 %>%  mutate(enrollment_percentage = enrollment_percentage/100) 
+
+ggplot(c6, aes(reorder(category, enrollment_percentage), enrollment_percentage, fill = category)) +
+  geom_bar(stat = 'identity') +
+   ggtitle("For-Profit/Non-Profit Racial & Ethnic Percent Enrollment Comparisons") +
+  labs(y = "Enrollment Percentage", x = "Race/Ethnicity") +
+  scale_fill_manual(values=c("#9999CC", "#66CC99")) +
+  theme_light()+
+  facet_wrap(~ profit_status) 
+```
+
+```{r}
+ggplot(c6census, aes(reorder(category, enrollment_percentage), enrollment_percentage, fill = category)) +
+  geom_bar(stat = 'identity') +
+   ggtitle("For-Profit/Non-Profit Racial & Ethnic Percent Enrollment Comparisons") +
+  labs(y = "Enrollment Percentage", x = "Race/Ethnicity") +
+  scale_fill_manual(values=c("#9999CC", "#66CC99")) +
+  scale_y_continuous(labels = function(x) paste(((x/40) + 20), "%")) + # Multiply by 5 & add % 
+  theme_light()+
+  facet_wrap(~ profit_status) 
+```
+
+## **Question 3: What is the relationship between tuition rate and salary potential?
+
+### In-State Tuition and Early-Career Salary
+```{r}
+ptc1 <- monsterfinal %>%
+  ggplot()+
+  geom_point(aes(x=in_state_total, y=early_career_pay, fill = type, text = paste("Name:", name, '</br>', '</br>In-State Total:', in_state_total, '</br>Early Career Pay:', early_career_pay)))+
+  stat_smooth(aes(x=in_state_total, y=early_career_pay), method = 'lm', se = FALSE, lwd = 0.5, col = "black")+
+  ggtitle("In-State Tuition and Early-Career Salary")+
+  labs(x="In-State Tuition (per year)", y="Early-Career Salary")+
+  theme_minimal()+
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggplotly(ptc1, tooltip = "text") 
+```
+
+```{r}
+fitInStateEarlyCareer<- lm(monsterfinal$early_career_pay ~ monsterfinal$in_state_total) 
+
+summary(fitInStateEarlyCareer)
+```
+The In-State tuition rates do have a low p-value suggesting that we should reject the null hypothesis that there is no relationship between in-state tuition and early career pay.  However the adjusted R-squared value is only 32.73%, as is demonstrated by the wide spread of datapoints on our plot, telling us that in-state tuition alone does not predict early career pay, rather there is a strong chance that other factors contribute to the observed outcome.
+
+
+### In-State Tuition and Mid-Career Salary
+```{r}
+ptc2 <- monsterfinal %>%
+  ggplot()+
+  geom_point(aes(x=in_state_total, y=mid_career_pay, fill = type, text = paste("Name:", name, '</br>', '</br>In-State Total:', in_state_total, '</br>Mid Career Pay:', mid_career_pay)))+
+  stat_smooth(aes(x=in_state_total, y=mid_career_pay), method = 'lm', se = FALSE, lwd = 0.5, col = "black")+
+  ggtitle("In-State Tuition and Mid-Career Salary")+
+  labs(x="In-State Tuition (per year)", y="Mid-Career Salary")+
+  theme_minimal()+
+  scale_fill_viridis_d()+
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggplotly(ptc2, tooltip = "text") 
+```
+
+```{r}
+fitInStateMidCareer<- lm(monsterfinal$mid_career_pay ~ monsterfinal$in_state_total) 
+
+summary(fitInStateMidCareer)
+```
+The In-State tuition rates do have a low p-value suggesting that we should reject the null hypothesis that there is no relationship between in-state tuition and mid-career pay.  However the adjusted R-squared value is only 35.43%, as is demonstrated by the wide spread of datapoints on our plot, telling us that in-state tuition alone does not predict mid-career pay, rather there is a strong chance that other factors contribute to the observed outcome.
+
+### Out-of-State Tuition and Early-Career Salary
+```{r}
+ptc3 <- monsterfinal %>%
+  ggplot()+
+  geom_point(aes(x=out_of_state_total, y=early_career_pay, fill = type, shape = type, text = paste("Name:", name, '</br>', '</br>Out-of-State Total:', out_of_state_total, '</br>Early Career Pay:', early_career_pay)))+
+  stat_smooth(aes(x=out_of_state_total, y=early_career_pay), method = 'lm', se = FALSE, lwd = 0.5, col = "black")+
+  ggtitle("Out-of-State Tuition and Early-Career Salary")+
+  labs(x="Out-of-State Tuition (per year)", y="Early-Career Salary")+
+  theme_minimal()+
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggplotly(ptc3, tooltip = "text") 
+```
+```{r}
+fitOutStateEarlyCareer<- lm(monsterfinal$early_career_pay ~ monsterfinal$out_of_state_total) 
+
+summary(fitOutStateEarlyCareer)
+```
+
+The out-of-state tuition rates do have a low p-value suggesting that we should reject the null hypothesis that there is no relationship between in-state tuition and early career pay.  The adjusted R-squared value is 46.5%, which is noticeably greater than in-state tuition.  However, it is still not close to 100%, which tells us that out-of-state tuition alone does not predict early career pay, rather there is a strong chance that other factors contribute to the observed outcome.
+
+### Out-of-State Tuition and Mid-Career Salary
+```{r}
+ptc4 <- monsterfinal %>%
+  ggplot()+
+  geom_point(aes(x=out_of_state_total, y=mid_career_pay, fill = type, text = paste("Name:", name, '</br>', '</br>Out-of-State Total:', out_of_state_total, '</br>Mid-Career Pay:', mid_career_pay)))+
+  stat_smooth(aes(x=out_of_state_total, y=mid_career_pay), method = 'lm', se = FALSE, lwd = 0.5, col = "black")+
+  ggtitle("Out-of-State Tuition and Mid-Career Salary")+
+  labs(x="Out-of-State Tuition (per year)", y="Mid-Career Salary")+
+  theme_minimal()+
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggplotly(ptc4, tooltip = "text") 
+```
+
+```{r}
+fitOutStateMidCareer<- lm(monsterfinal$mid_career_pay ~ monsterfinal$out_of_state_total) 
+
+summary(fitOutStateMidCareer)
+```
+
+The out-of-state tuition rates do have a low p-value suggesting that we should reject the null hypothesis that there is no relationship between out-of-state tuition and mid-career pay. The adjusted R-squared value is 49.54%, which is noticeably greater than in-state tuition.  However, it is still not close to 100%, which tells us that out-of-state tuition alone does not predict mid-career pay, rather there is a strong chance that other factors contribute to the observed outcome.
+
+
+
+
+
+
+## **Question 4 : TIFFANY'S SECTION**
+```{r}
+library('rvest')
+library(tidyverse)
+library(dplyr)
+```
+
+## Inserting the CSV file (Tuition Cost)
+```{r}
+read.csv("/Users/tiffanyking/Documents/Data101/tuition_cost.csv")
+```
+
+##Setting working directory 
+```{r}
+#setwd("/Users/tiffanyking/Documents/Data101")
+#tuition <- read_csv("tuition_cost.csv")
+```
+
+## View data
+```{r}
+head(tuition)
+```
+## Simplifying Names for all Schools in our Samples
+
+We changed all of the names of our schools to simplified versions which was particularly important for the schools with multiple locations.
+
+FOR PROFIT 
+
+### Jennifer - For-Profit Name Changes
+```{r}
+tuition$name[grepl('Clover Park Technical College', tuition$name)] <- 'Clover Park Tech College'
+tuition$name[grepl('San Diego City College', tuition$name)] <- 'San Diego City College'
+tuition$name[grepl('Aspen University', tuition$name)] <- 'Aspen Univ.'
+tuition$name[grepl('Grand Canyon University', tuition$name)] <- 'Grand Canyon Univ.'
+tuition$name[grepl('American Public University', tuition$name)] <- 'American Public Univ.'
+tuition$name[grepl("Southeastern Community College (Iowa)", tuition$name)] <- "Southeastern Community College Iowa"
+```
+
+##Ana - For-Profit Name Changes
+```{r}
+tuition$name[grepl('Blue Cliff College', tuition$name)] <- 'Blue Cliff College' 
+tuition$name[grepl('University of Phoenix', tuition$name)] <- 'University of Phoenix' 
+tuition$name[grepl('Stevens-Henager College', tuition$name)] <- 'Stevens-Henager College' 
+tuition$name[grepl('DeVry University', tuition$name)] <- 'DeVry Univ.' 
+tuition$name[grepl('Pioneer Pacific College', tuition$name)] <- 'Pioneer Pacific College' 
+tuition$name[grepl('National College at', tuition$name)] <- 'National College'
+```
+
+### Tiffany - For-Profit Name Changes
+```{r}
+tuition$name[grepl('Strayer University', tuition$name)]<- 'Strayer Univ.'
+tuition$name[grepl('Lincoln Tech',tuition$name)]<- 'Lincoln Tech' 
+tuition$name[grepl('Fashion Institute of Design and Merchandising', tuition$name)]<- 'Fashion Institute'
+tuition$name[grepl('Centura College', tuition$name)]<- 'Centura College'
+tuition$name[grepl('Rasmussen College', tuition$name)]<- 'Rasmussen College' 
+tuition$name[grepl('Fortis College',tuition$name)]<- 'Fortis College'
+```
+
+##NOT FOR PROFIT 
+### Jennifer- Non-Profit Name Changes
+```{r}
+tuition$name[grepl('University of Houston', tuition$name)] <- 'Univ. of Houston'
+tuition$name[grepl('University of Colorado', tuition$name)] <- 'Univ. of Colorado'
+tuition$name[grepl('University of Massachusetts', tuition$name)] <- 'Univ. of Massachusetts'
+tuition$name[grepl('Arizona College', tuition$name)] <- 'Arizona College'
+tuition$name[grepl('University of Idaho', tuition$name)] <- 'Univ. of Idaho'
+tuition$name[grepl('Clark College', tuition$name)] <- 'Clark College'
+tuition$name[grepl('City University of New York Hunter College', tuition$name)] <- 'City Univ. New York Hunter College'
+```
+### Ana - Non-Profit Name Changes 
+```{r}
+tuition$name[grepl('State University of New York', tuition$name)] <- 'State Univ. of New York' 
+```
+### Tiffany - Non-Profit Name Changes
+```{r}
+tuition$name[grepl('Pennsylvania State University',tuition$name)]<- 'Penn State Univ.'
+
+tuition$name[grepl('University of Minnesota',tuition$name)]<- 'Univ. of Minn'
+
+tuition$name[grepl('Arizona State University',tuition$name)]<- 'Arizona State'
+
+tuition$name[grepl('ITT Technical Institute',tuition$name)]<- 'ITT Tech' 
+```
+## columns
+
+##**Creating a two new datasets to compare of for-profit and not-for-profit institutions**
+```{r}
+for_profit2 <- tuition %>% 
+  filter(name == "Spencerian College" |
+           name == "Mildred Elley" | 
+           name == "Brookline College" | 
+           name == "Grand Canyon Univ." | 
+           name == "Aspen Univ." | 
+           name == "American Public Univ." | 
+           name == "Western Intl Univ." | 
+           name == "NewSchool Arch. Design" | 
+           name == "Schiller Intl Univ." | 
+           name == "Natl Paralegal College" | 
+           name == "West Coast Univ." | 
+           name == "Blue Cliff College" | 
+           name == "Walden University" |
+           name == "Neumont University" |
+           name == "University of Phoenix" | 
+           name == "Stevens-Henager College" | 
+           name == "DeVry Univ." | 
+           name == "Pioneer Pacific College" | 
+           name == "Stratford University" | 
+           name == "Capella University" | 
+           name == "Grantham University" | 
+           name == "Redstone College" | 
+           name == "National College" | 
+           name == "Strayer Univ." | 
+           name == "Lincoln Tech" | 
+           name == "Fashion Institute" | 
+           name == "Centura College" |  
+           name == "Rasmussen College" | 
+           name == "Fortis College" | 
+           name == "Full Sail University" | 
+           name == "Rocky Mountain College of Art & Design" | 
+           name == "Minneapolis Business College" | 
+           name == "Paier College of Art" | 
+           name == "Vista College" | 
+           name == "Bay State College" )
+```
+
+```{r}
+str(for_profit2)
+head(for_profit2)
+```
+## NOT for Profit 
+```{r}
+not_profit <- tuition %>% 
+  filter(name == "Univ. of Idaho" |
+           name == "Clover Park Technical College"|
+           name == "Clark College"|
+           name == "City Univ. New York Hunter College"|
+           name == "Univ. of Houston" | 
+           name == "Univ. of Colorado"|
+           name == "Univ. of Massachusetts" |
+           name == "Arizona College" |
+           name == "San Diego City College" | 
+           name == "State Univ. of New York" | 
+           name == "Eastern Shore Community College" | 
+           name == "Southern Oregon University" | 
+           name == "Santa Monica College" | 
+           name == "Adirondack Community College" | 
+           name == "East Georgia State College" | 
+           name == "Smith College" | 
+           name == "East Tennessee State University" | 
+           name == "Austin Community College" | 
+           name == "Tompkins Cortland Community College" | 
+           name == "Penn State Univ." | 
+           name == "Univ. of Minn" | 
+           name == "Arizona State" | 
+           name == "ITT Tech" | 
+           name == "University of Hawaii Hawaii Community College"|
+           name == "Burlington College" | 
+           name == "University of Central Oklahoma" | 
+           name == "Southern Virginia University" | 
+           name == "Pennsylvania Highlands Community College" | 
+           name == "Colgate University"|
+           name == "University of Pittsburg")
+```
+
+```{r}
+diversity <- read_csv("diversity2.csv")
+```
+
+```{r}
+salary <- read_csv("salary_potential.csv") 
+salary_added <- left_join(diversity,salary,by="name") 
+salary_added_final <- na.omit(salary_added)
+```
+
+```{r}
+tuition <- read_csv("tuition_cost.csv") 
+tuition_added <- left_join(tuition,salary_added_final,by="name")
+monsterfinal <- na.omit(tuition_added)
+```
+
+```{r}
+library(ggplot2)
+```
+
+## Creating Graphs/Visualizations
+
+## Find the Average of For& Not Profit
+```{r}
+mean(not_profit$in_state_tuition)
+mean(for_profit2$in_state_tuition)
+mean(not_profit$out_of_state_tuition)
+mean(for_profit2$out_of_state_tuition)
+```
+## New Data Frame for Means/ Average Tuition  
+```{r}
+test <- data.frame( "Name" = c("Not Profit In State","Not Profit Out State","For Profit In State","For Profit Out State"),"Mean" = c(13346.43,23281.38,18042.17,18042.17))
+```
+
+```{r}
+str(not_profit)
+```
+
+```{r}
+install.packages("RColorBrewer")
+library(RColorBrewer)
+
+
+plot1 <- test%>%
+  ggplot(aes(x=Name, y=Mean,fill=Name)) +
+  geom_bar(stat="identity")+
+  coord_flip() +
+  theme_minimal() +
+  ggtitle("Average Tuition Rate For & Not Profit US Schools", ) +
+  theme (plot.title = element_text(hjust = .01, size=15)) +
+  theme(legend.justification = -20, 
+        legend.position="bottom", 
+        legend.text = element_text(size=6) ,
+        )  +
+  xlab("School Type") +
+  ylab ("Cost") +
+  scale_color_brewer()
+
+plot1
+```
+## Create Data Set for Not Profits (In State Tuition)
+```{r}
+test2 <- data.frame ("Name" = c("Univ. of Idaho", "Clover Park Technical College", "Clark College","City Univ. New York Hunter College", "Univ. of Houston","Univ. of Colorado", "Univ. of Massachusetts", "Arizona College","San Diego City College","State Univ. of New York", "Eastern Shore Community College","Southern Oregon University", "Santa Monica College","Adirondack Community College","East Georgia State College","Smith College","East Tennessee State University","Austin Community College", "Tompkins Cortland Community College","Penn State Univ.","Univ. of Minn","Arizona State","ITT Tech","University of Hawaii Hawaii Community College","Burlington College","University of Central Oklahoma", "Southern Virginia University","Pennsylvania Highlands Community College","Colgate University","University of Pittsburg") , "Tuition"=c(7864, 4271, 4287, 7180, 12506, 11463, 14835, 2640, 1418, 8540, 4800,  9654, 1444,5375,3666, 52404,9277,2550,6046,18454,11921,10822, 45000, 3915, 22500, 7488, 16495, 5820, 55870, 19080))
+```
+
+##Graph the Test 2 Data Set(Not Profits-In State Tuition) 
+```{r}
+plot1 <- test2%>%
+  ggplot(aes(x=Name, y=Tuition ,fill=Tuition)) +
+  geom_bar(stat="identity")+
+  coord_flip() +
+  theme_minimal() +
+  ggtitle("In-State Tuition Rate for Not Profit US Schools", ) +
+  theme (plot.title = element_text(hjust = .01, size=15)) +
+  theme(legend.justification = -20, 
+        legend.position="bottom", 
+        legend.text = element_text(size=6) ,
+        )  +
+  xlab("School name") +
+  ylab ("Tuition Cost") +
+  scale_color_brewer()
+
+plot1
+```
+## Create data set for For-Profit (In-state)
+```{r}
+test3 <- data.frame("Name"=c("Spencerian College", "Mildred Elley", "Brookline College","Grand Canyon Univ.","Aspen Univ.", "American Public Univ.", "Western Intl Univ.", "NewSchool Arch. Design", "Schiller Intl Univ.", "Natl Paralegal College", "West Coast Univ.", "Blue Cliff College", "Walden University", "Neumont University", "University of Phoenix", "Stevens-Henager College", "DeVry Univ.", "Pioneer Pacific College", "Stratford University", "Capella University","Grantham University", "Redstone College",  "National College","Strayer Univ.","Lincoln Tech", "Fashion Institute","Centura College","Rasmussen College","Fortis College", "Full Sail University", "Rocky Mountain College of Art & Design", "Minneapolis Business College", "Paier College of Art", "Vista College","Bay State College"), "Tuition3"=c(16860,14250,13500,27090,14492,7324,11040,28386,17700,7995,17030,15182,15045,24750,9552,14585,15188,2310,16750,13788,6540,15530,13320,13515,27401,5740,15887,5200,15511,19929,28512,15120,18040,2720,27750))
+
+```
+
+##Graph the Test 3 Data Set(For-Profit-In-state)
+```{r}
+plot1 <- test3%>%
+  ggplot(aes(x=Name, y=Tuition3 ,fill=Tuition3)) +
+  geom_bar(stat="identity")+
+  coord_flip() +
+  theme_minimal() +
+  ggtitle("In-State Tuition Rate for For Profit US Schools", ) +
+  theme (plot.title = element_text(hjust = .01, size=15)) +
+  theme(legend.justification = -20, 
+        legend.position="bottom", 
+        legend.text = element_text(size=6) ,
+        )  +
+  xlab("School name") +
+  ylab ("Tuition Cost") +
+  scale_color_brewer()
+
+plot1
+```
+ 
+```{r}
+tuitionset <- data.frame(mean_tuition = c(13346.43, 18042.17, 23281.38, 18042.17), type = c("Not-Profit in-state tuition", "For-Profit in-state-tuition", "Not-Profit out-of-state tuition", "For-profit out-of-state tuition"))
+```
+
+```{r}
+barplot(tuitionset)
+```
+
+
+
+## **ANA'S sECTION**
+
+## **Question 7: How do diversity, tuition rates and salary rates at the top 20 schools compare to other schools?**
+
+# Loading Libraries
+```{r}
+#install.packages("RColorBrewer")
+#Loading the rvest package
+library('rvest')
+library(tidyverse)
+library(dplyr)
+```
+# Scraping the names of top US schools from wikipedia
+```{r}
+#Specifying the url for desired website to be scraped
+url <- 'https://en.wikipedia.org/wiki/College_and_university_rankings_in_the_United_States'
+
+#Reading the HTML code from the website
+top <- read_html(url)
+
+#Using CSS selectors to scrape the rankings section
+top_html <- html_nodes(top,'td a')
+#Converting the ranking data to text
+topschools <- html_text(top_html)
+#topschools
+topschools_new <- topschools[11:30]
+#df <-data_frame(topschools_new)
+#df
+topschools_new
+```
+# Changing name of school with multiple campuses, and adding new column of enrollement percentage
+```{r}
+diversity$name[grepl('University of Michigan', diversity$name)] <- 'University of Michigan' 
+diversity <- diversity %>%  mutate(enrollment_percentage = enrollment/ total_enrollment*100)
+```
+# Creating new dataframe of top schools
+```{r}
+topschools_diversity <- diversity  %>% 
+  filter(name == "Harvard University"   |
+         name == "Stanford University"  |
+         name == "Yale University"  |
+         name == "Massachusetts Institute of Technology"  |
+         name == "Princeton University"  |                  
+         name == "University of Pennsylvania"  |           
+         name == "Brown University"  |                      
+         name == "California Institute of Technology"  |   
+         name == "Duke University"  |                       
+         name == "Dartmouth College"  |                    
+         name == "Cornell University"  |                    
+         name == "Pomona College"  |                       
+         name == "University of California at Berkeley"  |    
+         name == "Columbia University"  |                  
+         #name == "Georgetown University"  |                 
+         name == "University of Chicago"  |                
+         name == "Northwestern University"  |               
+         name == "University of Notre Dame"  |             
+         name == "Rensselaer Polytechnic Institute"   |     
+         name == "University of Michigan"    
+  )
+```
+# Checking to see the schools in new data frame. For some reason, Georgetown is not included in this dataset.
+```{r}
+unique(topschools_diversity$name) 
+```
+# Removing the unwated race categories
+```{r}
+topschools_diversity <- topschools_diversity %>% filter(category != "Women" & category != "Two Or More Races" & category != "Non-Resident Foreign" & category != "Unknown" & category != "Total Minority")
+```
+# Plotting the diversity of the top 19 schools in the US
+```{r}
+plot1 <- topschools_diversity %>%
+  ggplot() +
+  geom_bar(aes(x=name, y= enrollment_percentage , 
+              fill = category),
+              position = "fill", 
+              stat = "identity" ) +
+  coord_flip() +
+  theme_minimal() +
+  ggtitle("Diversity Percent of Enrollment for Top 19 Collegs in US", ) +
+  theme (plot.title = element_text(hjust = .01, size=13)) +
+  labs(fill = "Race") +
+  theme(legend.justification = -5, 
+        legend.position="bottom", 
+        legend.text = element_text(size=7) ,
+        )  +
+  xlab("School Name") +
+  ylab ("Percent of Enrollment") 
+plot1
+```
+Tha graph shows that white students are overwhelmingly present in the top 19 colleges in the US. The 2nd largested present population are Asian students. Hispanic and Black students follow, but are very underwhelmed in numbers. The population of American Indian and Native Hawaiian students are barely visible and present on the graph. This graph fuels the preconception that top US schools (including IVY leagues) are reserved for students with access to resources and privilage (white and asian).
+
+## Now creating a master dataset to include tuition & salary pay for top schools
+```{r}
+tuition <- read_csv("tuition_cost.csv")
+salary <- read_csv("salary_potential.csv")
+salary_added <- merge(x = diversity, y = salary, by = "name", all = TRUE)
+```
+
+```{r setup, include=FALSE}
+all_added <- merge(x = salary_added, y = tuition, by = "name", all = TRUE)
+```
+
+## Where did Harvard go? We can add the missing "NA" data before removing "NAs From the data. We obtained the tuition information from another source "https://www.collegesimply.com/colleges/massachusetts/harvard-university/price/"
+```{r}
+all_added$in_state_tuition[all_added$name == "Harvard University"] <- 46340
+all_added$in_state_total[all_added$name == "Harvard University"] <- 67580
+all_added$out_of_state_tuition[all_added$name == "Harvard University"] <- 46340
+all_added$out_of_state_total[all_added$name == "Harvard University"] <- 67580
+all_added$out_of_state_tuition[all_added$name == "Harvard University"] <- 46340
+all_added$room_and_board[all_added$name == "Harvard University"] <- 17160
+all_added$state.y [all_added$name == "Harvard University"] <- "Massachusetts"
+all_added$state_code [all_added$name == "Harvard University"] <- "MA"
+all_added$type[all_added$name == "Harvard University"] <- "Private"
+all_added$degree_length[all_added$name == "Harvard University"] <- "4 Year"
+```
+
+## Now that Harvard is in there, we can continue and remove all the NAs from the data
+```{r}
+monsterfinal <- na.omit(all_added)
+```
+
+## Creating a new subset of the top 20 schools in the US into a new data frame
+```{r}
+topschools_monster <- monsterfinal  %>% 
+  filter(name == "Harvard University"   |
+         name == "Stanford University"  |
+         name == "Yale University"  |
+         name == "Massachusetts Institute of Technology"  |
+         name == "Princeton University"  |                  
+         name == "University of Pennsylvania"  |           
+         name == "Brown University"  |                      
+         name == "California Institute of Technology"  |   
+         name == "Duke University"  |                       
+         name == "Dartmouth College"  |                    
+         name == "Cornell University"  |                    
+         name == "Pomona College"  |                       
+         name == "University of California at Berkeley"  |    
+         name == "Columbia University"  |                  
+         name == "Georgetown University"  |                 
+         name == "University of Chicago"  |                
+         name == "Northwestern University"  |               
+         name == "University of Notre Dame"  |             
+         name == "Rensselaer Polytechnic Institute"   |     
+         name == "University of Michigan"    
+  )
+```
+
+## Seeing the schools that are in our new dataframe, we see that some school disappeared due to lack of info (Georgetown - not in any dataset), U Michigan - missing salary info, Columbia - missing tutition and salary, Uhiversity of Cali - missing tutition and salary )
+```{r}
+unique(topschools_monster$name)
+```
+## Graphing the intersection between early career pay and in state tuition
+```{r}
+library(ggplot2)
+library(plotly)
+plot_top <- ggplot(topschools_monster, 
+      aes(x=early_career_pay, y=in_state_total, color=name)) + 
+      geom_point(stat = 'identity') + 
+      geom_smooth(method=lm, colour="grey") +
+      ggtitle("Early Career Pay and Instate tutition of Top Schools") +
+       xlab("Early Career Pay Salary") +
+  ylab ("In-state Tuition Total") +
+  labs(color = "School Name") 
+plot_top 
+```
+
+## adding plotly for interactivity
+```{r}
+ggplotly(plot_top)
+```
+Thr graph shows an intersection between the tutition costs and early career salary outcomes of students who attended top US schools. One would assume that the more expensive a school would be, is correlated to the "prestige" and be relfected in a higher salary comming straight of out undergrad. However, this graph suggest the opposite, that the lesser inexpesnive "top schools" are yielding relatively higher early career salary than their more expensive counterparts.
+
+
+## **Data Analysis**
+
+As the graphs above illustrate, our data verifies that indeed there are a higher proportion of students of color at for-profit colleges than at non-profit colleges.  White Students (shown in pink in the above plots) have much greater attendance at non-profit colleges.  These findings provide support for the argument that there are higher numbers of enrollment of students of color at for-profit colleges. One possible explanation could be targeted marketing campaigns by for-profit colleges to students of color.  Further research is required. 
+
+Given the well-documented high cost of for-profit education, the exorbitant student debt incurred at these schools,  the lower rates of employment upon graduation and the low levels of satisfaction with educational quality from previous students, all potential students should think twice before enrolling in for-profit colleges.  This is particularly true for students of color who may be identified by for-profit colleges as susceptible to predatory exploitative practices that will provide additional profits to the college's shareholders without making good on their promise to provide a marketable, quality education.  The predatory actions of for-profit colleges contribute to our nation's growing economic divide between the haves and the have nots and perpetuates the unequal education system we have today.  Fortunately, there are many people and organizations working to end these predatory practices, but in the meantime while they continue to exist, we must inform one another about the importance of obtaining a quality education at not-for-profit institutions, like Montgomery College.
+
+## **Future Research**
+
+The following is a list of more detailed analysis that could be done with this dataset:
+
+1. Comparing diversity of for-profit and not-for-profit schools in the same geographic regions utilizing local racial demographics.
+
+2. Comparing community colleges, to four-year-institutions, to for-profit institutions
+
+3. Comparing the tuition rates, salary potential and overall profits received from community colleges, four-year institutions and for-profit institutions. 
+
+4. A longitudinal study could be conducted to see if there have been changes in the demographic makeup of for-profit colleges in the time before the Obama-era regulations, the lack of regulation during the DeVos era and the patterns that emerge after the predatory lending lawsuits and any resulting legislation. 
+
+
+
+## **References**
+
+Body, D. (2019, Mar. 19).  Worse Off Than When They Enrolled: The Consequence of For-Profit Colleges for People of Color.  *The Aspen Institute*.  https://www.aspeninstitute.org/blog-posts/worse-off-than-when-they-enrolled-the-consequence-of-for-profit-colleges-for-people-of-color/
+
+Bonadies, G.G., Rovenger, J., Connor, E., Shum, B. & Merrill, T. (2018, Jul. 30). For-Profit Schools' Predatory Practices and Students of Color:  A Mission to Enroll Rather than Educate, *Harvard Law Review Blog*. https://blog.harvardlawreview.org/for-profit-schools-predatory-practices-and-students-of-color-a-mission-to-enroll-rather-than-educate/  
+
+Conti, A. (2019, Sep. 10).  How For-Profit Colleges Have Targeted and Taken Advantage of Black Students. *Vice*. https://www.vice.com/en_us/article/bjwj3d/how-for-profit-colleges-have-targeted-and-taken-advantage-of-black-students
+
+Green, E.L. (2019, Jun. 28).  DeVos Repeals Obama-Era Rule Cracking down on For-Profit Colleges, *New York Times*. https://www.nytimes.com/2019/06/28/us/politics/betsy-devos-for-profit-colleges.html
+
+Halperin, D. 22 States Sue DeVos to Overturn Anti-Student Rule.  *Republic Report*. https://www.republicreport.org/2020/22-states-sue-devos-to-overturn-anti-student-rule/
+
+Legal Services Center(2020), *Project on Predatory Student Lending: Cases*, Harvard Law School.  https://predatorystudentlending.org/cases/
+
+Lobosco, K. (2019, Jul. 23).  For-profit college students are waiting 958 days for loan relief, *CNN*.  https://www.cnn.com/2019/07/23/politics/betsy-devos-loan-forgiveness-for-profit-college-students/index.html
+
+Lopez, M. (2015, Feb. 12).  BEWARE: For-Profit Colleges.  *The Patriot Post*. https://bcchspatriotpost.com/2391/news/beware-for-profit-colleges/ 
+
+Redman, H. (2020, Jun. 27).  AG Sues Department of Education Over For-Profit College Rules.  *Urban Milwaukee*.  https://urbanmilwaukee.com/2020/06/27/ag-sues-department-of-education-over-for-profit-college-rules/
+
+TBS Staff (2019, Jul. 29).  For-Profit Colleges vs. Non-Profit Colleges - What's The Difference?  *The Best Schools Magazine*.  https://thebestschools.org/magazine/for-profit-vs-non-profit  
+
+Turner, C. (2019, Nov. 14).  Devos Refuses to Forgive student Debt For Those DeFrauded by For-Profit Colleges, *All Things Considered, NPR*. https://www.npr.org/2019/11/14/779465130/devos-refuses-to-forgive-student-debt-for-those-defrauded-by-for-profit-colleges
+
+Voorhees, K. (2019, Oct. 17).  Civil Rights Groups: For-Profit Colleges Exploit Black and Latino Students. *The Leadership Conference Education Fund*. https://civilrights.org/edfund/2019/10/17/civil-rights-groups-for-profit-colleges-exploit-black-and-latino-students/
